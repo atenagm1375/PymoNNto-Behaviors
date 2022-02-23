@@ -29,6 +29,40 @@ class STDP(Behaviour):
         a_plus (float): pre-post intensity.
         a_minus (float): post-pre intensity.
     """
+    def conv2d_update(self, synapses):
+        # TODO check if the method works
+        src_spikes = synapses.src.spikes
+        src_trace = synapses.src.trace
+        dst_spikes = synapses.dst.spikes
+        dst_trace = synapses.dst.trace
+
+        p0, p1 = synapses.pad
+        h_in = int(np.sqrt(synapses.src.size)) + 2 * p0
+        w_in = int(np.sqrt(synapses.src.size)) + 2 * p1
+        c_in = synapses.src.size // (h_in * w_in)
+
+        pre_spikes = np.zeros((1, h_in, w_in, c_in))
+        pre_spikes[:, p0:h_in-p0, p1:w_in-p1, :] = src_spikes
+
+        pre_trace = np.zeros((1, h_in, w_in, c_in))
+        pre_trace[:, p0:h_in-p0, p1:w_in-p1, :] = src_trace
+
+        src_spikes = np.lib.stride_tricks.sliding_window_view(
+            pre_spikes, synapses.kernel_size
+        )
+
+        src_trace = np.lib.stride_tricks.sliding_window_view(
+            pre_trace, synapses.kernel_size
+        )
+
+        dst_spikes = dst_spikes.reshape((1, synapses.n_filters, -1))
+        dst_trace = dst_trace.reshape((1, synapses.n_filters, -1))
+
+        dw_minus = -synapses.a_minus * dst_trace * src_spikes
+        dw_plus = synapses.a_plus * src_trace * dst_spikes
+
+        return dw_minus, dw_plus
+
     def set_variables(self, synapses):
         """
         Set STDP variables and pre- and post-synaptic neuron traces.
@@ -53,8 +87,11 @@ class STDP(Behaviour):
         synapses.src.trace += dx * synapses.dt
         synapses.dst.trace += dy * synapses.dt
 
-        dw_minus = -synapses.a_minus * synapses.dst.trace * synapses.src.spikes
-        dw_plus = synapses.a_plus * synapses.src.trace * synapses.dst.spikes
+        if "conv2d" in synapses.tags:
+            dw_minus, dw_plus = self.conv2d_update(synapses)
+        else:
+            dw_minus = -synapses.a_minus * synapses.dst.trace * synapses.src.spikes
+            dw_plus = synapses.a_plus * synapses.src.trace * synapses.dst.spikes
 
         synapses.W = np.clip(
             synapses.W + (dw_plus + dw_minus) * synapses.dt,
