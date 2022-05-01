@@ -3,7 +3,6 @@ Implementation of Leaky Integrate and Fire (LIF).
 """
 
 from PymoNNto import Behaviour
-import numpy as np
 
 
 class LIF(Behaviour):
@@ -22,6 +21,7 @@ class LIF(Behaviour):
         threshold (float): the voltage threshold.
         R (float): the resistance of the membrane potential.
     """
+
     def set_variables(self, neurons):
         """
         Set neuron attributes.
@@ -29,11 +29,11 @@ class LIF(Behaviour):
         Args:
             neurons (NeuronGroup): the neural population.
         """
-        self.add_tag('LIF')
+        self.add_tag("LIF")
         self.set_init_attrs_as_variables(neurons)
         neurons.v = neurons.get_neuron_vec() * neurons.v_rest
         neurons.spikes = neurons.get_neuron_vec() > neurons.threshold
-        neurons.dt = 1.
+        neurons.dt = 1.0
 
     def new_iteration(self, neurons):
         """

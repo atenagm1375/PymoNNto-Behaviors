@@ -2,8 +2,8 @@
 Implementation of Spike-Time Dependent Plasticity (STDP) based on local variables.
 """
 
-from PymoNNto import Behaviour
 import numpy as np
+from PymoNNto import Behaviour
 
 
 class STDP(Behaviour):
@@ -29,6 +29,7 @@ class STDP(Behaviour):
         a_plus (float): pre-post intensity.
         a_minus (float): post-pre intensity.
     """
+
     def conv2d_update(self, synapses):
         # TODO check if the method works
         src_spikes = synapses.src.spikes
@@ -42,10 +43,10 @@ class STDP(Behaviour):
         c_in = synapses.src.size // (h_in * w_in)
 
         pre_spikes = np.zeros((1, h_in, w_in, c_in))
-        pre_spikes[:, p0:h_in-p0, p1:w_in-p1, :] = src_spikes
+        pre_spikes[:, p0 : h_in - p0, p1 : w_in - p1, :] = src_spikes
 
         pre_trace = np.zeros((1, h_in, w_in, c_in))
-        pre_trace[:, p0:h_in-p0, p1:w_in-p1, :] = src_trace
+        pre_trace[:, p0 : h_in - p0, p1 : w_in - p1, :] = src_trace
 
         src_spikes = np.lib.stride_tricks.sliding_window_view(
             pre_spikes, synapses.kernel_size
@@ -70,11 +71,11 @@ class STDP(Behaviour):
         Args:
             synapses (SynapseGroup): the synapse to which STDP is applied.
         """
-        self.add_tag('STDP')
+        self.add_tag("STDP")
         self.set_init_attrs_as_variables(synapses)
         synapses.src.trace = synapses.src.get_neuron_vec()
         synapses.dst.trace = synapses.dst.get_neuron_vec()
-    
+
     def new_iteration(self, synapses):
         """
         Single step of STDP.
@@ -95,5 +96,6 @@ class STDP(Behaviour):
 
         synapses.W = np.clip(
             synapses.W + (dw_plus + dw_minus) * synapses.dt,
-            synapses.w_min, synapses.w_max
-            )
+            synapses.w_min,
+            synapses.w_max,
+        )
